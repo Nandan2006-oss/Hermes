@@ -1,5 +1,3 @@
-for now just describe the idea, no need the architecture, etc etc
-
 Hermes — AI-powered product intelligence for industrial commerce
 
 Industrial companies deal with product data scattered across websites, catalogs, and technical documents — turning that mess into clean, structured, commerce-ready listings takes hours of manual work per product.
