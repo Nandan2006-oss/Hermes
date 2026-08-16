@@ -12,6 +12,14 @@ app = FastAPI()
 class AnalysisRequest(BaseModel):
     text: str
 
+class AnalysisResponse(BaseModel):
+    product_name: str
+    brand: str
+    ram: str
+    storage: str
+
+schema=AnalysisResponse.model_json_schema()
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -22,10 +30,13 @@ def analyze(data: AnalysisRequest):
     # You can access the text using data.text
     interaction = client.interactions.create(
         model="gemini-3.6-flash",
-        input=data.text
+        input=data.text,
+        response_format={
+            "type": "text",
+            "mime_type": "application/json",
+            "schema": schema
+        }
     )
     return {
-        "message": "Analyze endpoint works",
-        "processed_text": data.text,
-        "output_text": interaction.output_text
+        "output_text": AnalysisResponse.model_validate_json(interaction.output_text)
     }
