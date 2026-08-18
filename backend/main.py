@@ -1,3 +1,5 @@
+from unittest import result
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from google import genai
@@ -13,12 +15,18 @@ class AnalysisRequest(BaseModel):
     text: str
 
 class AnalysisResponse(BaseModel):
-    product_name: str
+    part_number: str
     brand: str
-    ram: str
-    storage: str
+    product_type: str
+    quantity_value: float
+    quantity_uom: str
+    width: str
+    length: str
 
 schema=AnalysisResponse.model_json_schema()
+
+def normalize_dimension(value: str):
+    return value.replace('"', ' in')
 
 @app.get("/health")
 def health():
@@ -37,6 +45,9 @@ def analyze(data: AnalysisRequest):
             "schema": schema
         }
     )
-    return {
-        "output_text": AnalysisResponse.model_validate_json(interaction.output_text)
-    }
+    result = AnalysisResponse.model_validate_json(interaction.output_text)
+
+    result.width = normalize_dimension(result.width)
+    result.length = normalize_dimension(result.length)
+
+    return {"output_text": result}
