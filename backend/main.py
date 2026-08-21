@@ -18,10 +18,14 @@ app = FastAPI()
 # Data Models
 # -------------------------
 
-class EvidenceField(BaseModel):
-    value: str
+class SourceEvidence(BaseModel):
     evidence: str
     source: str
+
+
+class EvidenceField(BaseModel):
+    value: str
+    evidence: list[SourceEvidence]
     confidence: float
 
 
@@ -32,7 +36,7 @@ class Conflict(BaseModel):
 
 
 class AnalysisRequest(BaseModel):
-    text: str
+    sources: dict[str, str]
 
 
 class AnalysisResponse(BaseModel):
@@ -73,6 +77,10 @@ def validate_product(result: AnalysisResponse):
     return result
 
 
+def validate_evidence(evidence: str, original_text: str):
+    return evidence in original_text
+
+
 # -------------------------
 # Conflict Detection
 # -------------------------
@@ -97,19 +105,21 @@ def health():
 def analyze(data: AnalysisRequest):
 
     prompt = f"""
-Extract the relevant product information from the following product description.
+Extract the relevant product information from the following product sources.
 
 For every field that has an EvidenceField:
 
-- value: the extracted value
-- evidence: the exact text from the product description that supports the value
-- source: where the evidence came from. Since the only source currently provided is the product description, use "Part_Desc"
+- value: the normalized extracted value
+- evidence: a list of evidence items
+- each evidence item must contain:
+  - evidence: the exact text supporting the value
+  - source: the name of the source where that evidence was found
 - confidence: your confidence that the extracted value is correct, from 0 to 1
 
-Do not invent information that is not present in the product description.
+Do not invent information that is not present in the provided sources.
 
-Product description:
-{data.text}
+Product sources:
+{data.sources}
 """
 
     interaction = client.interactions.create(
@@ -142,6 +152,24 @@ Product description:
     result.quantity_uom = normalize_quantity_uom(
         result.quantity_uom
     )
+
+    # -------------------------
+    # Evidence Validation
+    # -------------------------
+
+    for item in result.width.evidence:
+        if not validate_evidence(
+            item.evidence,
+            data.sources[item.source]
+        ):
+            result.width.confidence = 0.0
+
+    for item in result.length.evidence:
+        if not validate_evidence(
+            item.evidence,
+            data.sources[item.source]
+        ):
+            result.length.confidence = 0.0
 
     # -------------------------
     # Validation
