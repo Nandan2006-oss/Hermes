@@ -1,7 +1,5 @@
 # Hermes
 
-**Evidence-first product data extraction and normalization.**
-
 Hermes is an AI-powered product information extraction system designed to convert messy product descriptions into **structured, validated, and traceable product data**.
 
 Instead of simply asking an LLM to return JSON, Hermes is being designed around three core ideas:
